@@ -1,0 +1,52 @@
+/* style.css */
+
+/* Custom font definition (Inter is loaded via CDN in HTML) */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Basic styling for page sections (controlled by JS to show/hide) */
+.page-section {
+    min-height: 50vh; /* Ensure sections have some height */
+}
+
+/* Recipe Card specific styles */
+.recipe-card {
+    background-color: #fff;
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out; /* transition-transform hover:scale-105 duration-300 */
+}
+
+.recipe-card:hover {
+    transform: scale(1.05);
+}
+
+.recipe-card-details {
+    padding: 1.25rem; /* p-5 */
+    border-top: 1px solid #e5e7eb; /* border-t border-gray-200 */
+    background-color: #f9fafb; /* bg-gray-50 */
+}
+
+/* Styling for the new checklist items */
+.recipe-card-details ul.list-none li label {
+    cursor: pointer; /* Indicate it's clickable */
+}
+
+.recipe-card-details ul.list-none li label input[type="checkbox"] {
+    /* Basic styling for checkbox, Tailwind form-checkbox class should handle most */
+    margin-right: 0.5rem;
+}
+
+
+/* Button hover effects (already handled by Tailwind, but good to note) */
+/* .button-primary:hover { ... } */
+/* .button-secondary:hover { ... } */
+
+/* Hide elements initially, JavaScript will show them */
+.hidden {
+    display: none !important;
+}
