@@ -1,11 +1,9 @@
-# auth_routes.py
 from flask import Blueprint, request, jsonify, session
 from models import db, User
 from functools import wraps
 
 auth_bp = Blueprint('auth', __name__)
 
-# Decorator to check if user is logged in
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -32,7 +30,6 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    # Log in the user automatically after registration
     session['user_id'] = new_user.id
     session['user_email'] = new_user.email
     return jsonify(message="User registered and logged in successfully!", userId=new_user.id, userEmail=new_user.email), 201
@@ -61,7 +58,7 @@ def logout():
 
 @auth_bp.route('/status', methods=['GET'])
 def auth_status():
-    # This endpoint helps the frontend check current login status
+
     if 'user_id' in session:
         return jsonify(loggedIn=True, userId=session['user_id'], userEmail=session['user_email']), 200
     return jsonify(loggedIn=False), 200

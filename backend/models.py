@@ -1,54 +1,49 @@
+# models.py
+import datetime
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from sqlalchemy_serializer import SerializerMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
-class UserRecipe(db.Model):
-    __tablename__ = 'user_recipes'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False)
-    saved_at = db.Column(db.DateTime, default=datetime.utcnow)
+user_saved_recipes = db.Table(
+    'user_saved_recipes',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('recipe_id', db.Integer, db.ForeignKey('recipe.id'), primary_key=True)
+)
 
-    # Define relationships
-    user = db.relationship('User', backref=db.backref('saved_recipes_links', lazy=True))
-    recipe = db.relationship('Recipe', backref=db.backref('saved_by_users_links', lazy=True))
+user_liked_recipes = db.Table(
+    'user_liked_recipes',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('recipe_id', db.Integer, db.ForeignKey('recipe.id'), primary_key=True)
+)
 
-    def __repr__(self):
-        return f"<UserRecipe user_id={self.user_id} recipe_id={self.recipe_id}>"
+class User(db.Model, SerializerMixin):
+    __tablename__ = 'user'
 
-# Association table for many-to-many: Users and Recipes (Liked)
-class UserLikedRecipe(db.Model):
-    __tablename__ = 'user_liked_recipes'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False)
-    liked_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Define relationships
-    user = db.relationship('User', backref=db.backref('liked_recipes_links', lazy=True))
-    recipe = db.relationship('Recipe', backref=db.backref('liked_by_users_links', lazy=True))
-
-    def __repr__(self):
-        return f"<UserLikedRecipe user_id={self.user_id} recipe_id={self.recipe_id}>"
-
-
-class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationships for saved and liked recipes
-    # These will provide direct access to the Recipe objects
     saved_recipes = db.relationship(
-        'Recipe', secondary='user_recipes', lazy='dynamic',
-        backref=db.backref('savers', lazy=True)
+        'Recipe',
+        secondary=user_saved_recipes,
+        backref=db.backref('savers', lazy='dynamic'),
+        lazy='dynamic'
     )
+
     liked_recipes = db.relationship(
-        'Recipe', secondary='user_liked_recipes', lazy='dynamic',
-        backref=db.backref('likers', lazy=True)
+        'Recipe',
+        secondary=user_liked_recipes,
+        backref=db.backref('likers', lazy='dynamic'),
+        lazy='dynamic'
+    )
+
+    created_recipes = db.relationship(
+        'Recipe',
+        backref='creator',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
     )
 
     def set_password(self, password):
@@ -58,34 +53,39 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f"<User {self.email}>"
+        return f'<User {self.email}>'
 
-class Recipe(db.Model):
+class Recipe(db.Model, SerializerMixin):
+    __tablename__ = 'recipe'
+
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    ingredients = db.Column(db.Text, nullable=False) # Stored as comma-separated string or JSON string
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    ingredients = db.Column(db.Text, nullable=True)
     instructions = db.Column(db.Text, nullable=False)
+    image_filename = db.Column(db.String(255), nullable=True)
+    likes = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    # Foreign key to link recipe to its creator
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    likes_count = db.Column(db.Integer, default=0) # Renamed to avoid conflict with 'likes' relationship if added
-    image_filename = db.Column(db.String(255), nullable=True) # New column for image filename
 
-    creator = db.relationship('User', backref=db.backref('recipes', lazy=True))
-
-    def __repr__(self):
-        return f"<Recipe {self.title}>"
+    serialize_only = ('id', 'title', 'description', 'ingredients', 'instructions', 'image_filename', 'likes', 'created_at', 'creator_id')
 
     def to_dict(self):
+        # Override to_dict to handle ingredients as a list
         return {
             'id': self.id,
             'title': self.title,
             'description': self.description,
-            'ingredients': self.ingredients.split(',') if self.ingredients else [], # Convert back to list
+            'ingredients': [i.strip() for i in self.ingredients.split(',')] if self.ingredients else [],
             'instructions': self.instructions,
+            'image_filename': self.image_filename,
+            'likes': self.likes,
+            'created_at': self.created_at.isoformat(),
             'creatorId': self.creator_id,
-            'creatorEmail': self.creator.email if self.creator else 'Unknown',
-            'createdAt': self.created_at.isoformat(),
-            'likes': self.likes_count,
-            'imageFilename': self.image_filename # Include image filename
+            'creatorEmail': self.creator.email
         }
+    
+    def __repr__(self):
+        return f'<Recipe {self.title}>'

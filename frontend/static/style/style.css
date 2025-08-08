@@ -1,0 +1,39 @@
+body {
+    font-family: "Playwrite AU QLD", cursive;
+}
+
+.page-section {
+    min-height: 50vh;
+}
+
+.recipe-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out;
+}
+
+.recipe-card:hover {
+    transform: scale(1.05);
+}
+
+.recipe-card-details {
+    padding: 1.25rem; /* p-5 */
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.recipe-card-details ul.list-none li label {
+    cursor: pointer;
+}
+
+.recipe-card-details ul.list-none li label input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+.hidden {
+    display: none !important;
+}
